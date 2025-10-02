@@ -1,0 +1,59 @@
+name: Pipeline de Despliegue Completo CI/CD con .NET
+
+on:
+  push:
+    branches: [ "main", "preprod", "test", "develop" ]
+
+jobs:
+  test-code:
+    name: 1. Probar Código .NET
+    runs-on: ubuntu-latest
+
+    steps:
+      # Descarga el código
+      - uses: actions/checkout@v4
+
+      # Configura el entorno de .NET
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x' # Puedes ajustar la versión
+
+      # Restaura las dependencias (NuGet packages)
+      - name: Restore dependencies
+        run: dotnet restore
+
+      # Compila el proyecto
+      - name: Build
+        run: dotnet build --no-restore
+
+      # Ejecuta las pruebas
+      - name: Test
+        run: dotnet test --no-build --verbosity normal
+
+  deploy-test:
+    name: 2. Desplegar a Test
+    needs: test-code
+    if: github.ref == 'refs/heads/test'
+    runs-on: ubuntu-latest
+    environment: TEST
+    steps:
+      - run: echo "Desplegando a Test..."
+
+  deploy-preprod:
+    name: 3. Desplegar a Pre-producción
+    needs: test-code
+    if: github.ref == 'refs/heads/preprod'
+    runs-on: ubuntu-latest
+    environment: Pre-produccion
+    steps:
+      - run: echo "Desplegando a Pre-producción..."
+
+  deploy-prod:
+    name: 4. Desplegar a Producción
+    needs: test-code
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: Produccion
+    steps:
+    - run: echo "Desplegando a Producción..."
